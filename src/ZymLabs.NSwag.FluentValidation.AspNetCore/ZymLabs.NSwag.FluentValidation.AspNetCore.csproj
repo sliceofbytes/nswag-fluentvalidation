@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
     <PropertyGroup>
       <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
       <Description>Use FluentValidation rules to define validation requirements for NSwag Swagger/OpenAPI schema.</Description>
@@ -16,11 +15,11 @@
     <ItemGroup>
     </ItemGroup>
 
-    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
       <DocumentationFile>bin\Debug\ZymLabs.NSwag.FluentValidation.AspNetCore.xml</DocumentationFile>
     </PropertyGroup>
 
-    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
       <DocumentationFile>bin\Release\ZymLabs.NSwag.FluentValidation.AspNetCore.xml</DocumentationFile>
     </PropertyGroup>
 
