@@ -121,10 +121,10 @@ jobs:
       - name: Pack NuGet Packages
         run: dotnet pack -c Release /p:Version=${{ steps.gitversion.outputs.NuGetVersionV2 }} -o bin/
 
-      - name: Publish to GitHub Packages
-        run: dotnet nuget push "bin/*.nupkg" --source "github"
+      - name: Push to GitHub Packages
+        run: dotnet nuget push "bin/*.nupkg" --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --api-key ${{ secrets.GITHUB_TOKEN }}
         env:
-          NUGET_API_KEY: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Store NuGet package artifacts
         uses: actions/upload-artifact@v3
