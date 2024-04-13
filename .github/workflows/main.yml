@@ -54,7 +54,12 @@ jobs:
 
       - name: Convert test results to JUnit format
         if: always()
-        run: dotnet tool install -g trx2junit && trx2junit --input test_results.xml --output junit_test_results.xml
+        run: |
+          dotnet tool install -g trx2junit
+          echo "$PATH"
+          export PATH="$PATH:/root/.dotnet/tools"
+          find . -name '*.trx' -exec trx2junit --input {} --output {}_junit.xml \;
+        working-directory: ${{ github.workspace }}
 
       - name: Upload test results
         if: always()
