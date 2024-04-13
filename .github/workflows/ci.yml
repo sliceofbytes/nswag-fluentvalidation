@@ -25,7 +25,7 @@ jobs:
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: 8.0.x
-          source-url: https://nuget.pkg.github.com/zymlabs/index.json
+          source-url: https://nuget.pkg.github.com/sliceofbytes/index.json
         env:
           NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
@@ -90,7 +90,7 @@ jobs:
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: 8.0.x
-          source-url: https://nuget.pkg.github.com/zymlabs/index.json
+          source-url: https://nuget.pkg.github.com/sliceofbytes/index.json
         env:
           NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
@@ -153,7 +153,7 @@ jobs:
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: 8.0.x
-          source-url: https://nuget.pkg.github.com/zymlabs/index.json
+          source-url: https://nuget.pkg.github.com/sliceofbytes/index.json
         env:
           NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
