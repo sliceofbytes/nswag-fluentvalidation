@@ -71,7 +71,7 @@ jobs:
           dotnet-version: 8.0.x
 
       - name: Build Documentation
-        uses: nunit/docfx-action@v2.4.0
+        uses: nunit/docfx-action@v3.2.0
         with:
           args: docfx.json
 
