@@ -1,3 +1,4 @@
+using FluentValidation.Validators;
 using Xunit;
 
 namespace ZymLabs.NSwag.FluentValidation.Tests
@@ -160,6 +161,7 @@ namespace ZymLabs.NSwag.FluentValidation.Tests
             );
 
             Assert.False(typeof(bool).IsSubClassOfGeneric(typeof(IBaseGenericB<ClassA, ClassB, ClassC>)), "70");
+            Assert.True(typeof(AspNetCoreCompatibleEmailValidator<MockValidationTarget>).IsSubClassOfGeneric(typeof(AspNetCoreCompatibleEmailValidator<>)), "71");
         }
     }
 
