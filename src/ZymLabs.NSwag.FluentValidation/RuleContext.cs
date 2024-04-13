@@ -1,39 +1,31 @@
 using FluentValidation.Validators;
 using NJsonSchema.Generation;
 
-namespace ZymLabs.NSwag.FluentValidation
+namespace ZymLabs.NSwag.FluentValidation;
+
+/// <summary>
+/// RuleContext.
+/// </summary>
+/// <remarks>
+/// Creates new instance of <see cref="RuleContext"/>.
+/// </remarks>
+/// <param name="schemaProcessorContext">SchemaProcessorContext.</param>
+/// <param name="propertyKey">Property name.</param>
+/// <param name="propertyValidator">Property validator.</param>
+public class RuleContext(SchemaProcessorContext schemaProcessorContext, string propertyKey, IPropertyValidator propertyValidator)
 {
     /// <summary>
-    /// RuleContext.
+    /// SchemaProcessorContext.
     /// </summary>
-    public class RuleContext
-    {
-        /// <summary>
-        /// SchemaProcessorContext.
-        /// </summary>
-        public SchemaProcessorContext SchemaProcessorContext { get; }
+    public SchemaProcessorContext SchemaProcessorContext { get; } = schemaProcessorContext;
 
-        /// <summary>
-        /// Property name.
-        /// </summary>
-        public string PropertyKey { get; }
+    /// <summary>
+    /// Property name.
+    /// </summary>
+    public string PropertyKey { get; } = propertyKey;
 
-        /// <summary>
-        /// Property validator.
-        /// </summary>
-        public IPropertyValidator PropertyValidator { get; }
-
-        /// <summary>
-        /// Creates new instance of <see cref="RuleContext"/>.
-        /// </summary>
-        /// <param name="schemaProcessorContext">SchemaProcessorContext.</param>
-        /// <param name="propertyKey">Property name.</param>
-        /// <param name="propertyValidator">Property validator.</param>
-        public RuleContext(SchemaProcessorContext schemaProcessorContext, string propertyKey, IPropertyValidator propertyValidator)
-        {
-            SchemaProcessorContext = schemaProcessorContext;
-            PropertyKey = propertyKey;
-            PropertyValidator = propertyValidator;
-        }
-    }
+    /// <summary>
+    /// Property validator.
+    /// </summary>
+    public IPropertyValidator PropertyValidator { get; } = propertyValidator;
 }

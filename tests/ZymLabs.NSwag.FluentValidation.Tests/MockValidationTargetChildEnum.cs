@@ -1,9 +1,8 @@
-namespace ZymLabs.NSwag.FluentValidation.Tests
+namespace ZymLabs.NSwag.FluentValidation.Tests;
+
+public enum MockValidationTargetChildValues
 {
-    public enum MockValidationTargetChildEnum
-    {
-        Value,
-        Value2,
-        Value3
-    }
+    Value,
+    Value2,
+    Value3
 }

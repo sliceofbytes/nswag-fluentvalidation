@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using FluentValidation;
+﻿using FluentValidation;
 using FluentValidation.Internal;
 using FluentValidation.Validators;
 using Microsoft.Extensions.Logging;
@@ -9,409 +6,384 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NJsonSchema;
 using NJsonSchema.Generation;
 
-namespace ZymLabs.NSwag.FluentValidation
+namespace ZymLabs.NSwag.FluentValidation;
+
+/// <summary>
+/// Swagger <see cref="ISchemaProcessor"/> that uses FluentValidation validators instead System.ComponentModel based attributes.
+/// </summary>
+public class FluentValidationSchemaProcessor : ISchemaProcessor
 {
+    private readonly IServiceProvider? _serviceProvider;
+    private readonly ILogger _logger;
+    private readonly IReadOnlyList<FluentValidationRule> _rules;
+
     /// <summary>
-    /// Swagger <see cref="ISchemaProcessor"/> that uses FluentValidation validators instead System.ComponentModel based attributes.
+    /// Creates new instance of <see cref="FluentValidationSchemaProcessor"/>.
     /// </summary>
-    public class FluentValidationSchemaProcessor : ISchemaProcessor
+    /// <param name="serviceProvider">DI Service Provider.</param>
+    /// <param name="rules">External FluentValidation rules. Rule with the same name replaces default rule.</param>
+    /// <param name="loggerFactory"><see cref="ILoggerFactory"/> for logging. Can be null.</param>
+    public FluentValidationSchemaProcessor(IServiceProvider serviceProvider, IEnumerable<FluentValidationRule>? rules = null, ILoggerFactory? loggerFactory = null)
     {
-        private readonly IValidatorFactory? _validatorFactory;
-        private readonly IServiceProvider? _serviceProvider;
-        private readonly ILogger _logger;
-        private readonly IReadOnlyList<FluentValidationRule> _rules;
+        _serviceProvider = serviceProvider;
+        _logger = loggerFactory?.CreateLogger(typeof(FluentValidationSchemaProcessor)) ?? NullLogger.Instance;
+        _rules = CreateDefaultRules();
 
-        /// <summary>
-        /// Creates new instance of <see cref="FluentValidationSchemaProcessor"/>
-        /// </summary>
-        /// <param name="serviceProvider">DI Service Provider.</param>
-        /// <param name="rules">External FluentValidation rules. Rule with the same name replaces default rule.</param>
-        /// <param name="loggerFactory"><see cref="ILoggerFactory"/> for logging. Can be null.</param>
-        public FluentValidationSchemaProcessor(IServiceProvider serviceProvider,
-                                               IEnumerable<FluentValidationRule>? rules = null,
-                                               ILoggerFactory? loggerFactory = null)
+        if (rules != null)
         {
-            _serviceProvider = serviceProvider;
-            _logger = loggerFactory?.CreateLogger(typeof(FluentValidationSchemaProcessor)) ?? NullLogger.Instance;
-            _rules = CreateDefaultRules();
+            var ruleMap = _rules.ToDictionary(rule => rule.Name, rule => rule);
 
-            if (rules != null)
+            foreach (var rule in rules)
             {
-                var ruleMap = _rules.ToDictionary(rule => rule.Name, rule => rule);
-
-                foreach (var rule in rules)
-                {
-                    // Add or replace rule
-                    ruleMap[rule.Name] = rule;
-                }
-
-                _rules = ruleMap.Values.ToList();
+                // Add or replace rule
+                ruleMap[rule.Name] = rule;
             }
+
+            _rules = [.. ruleMap.Values];
         }
-        
-        /// <summary>
-        /// Creates new instance of <see cref="FluentValidationSchemaProcessor"/>
-        /// </summary>
-        /// <param name="validatorFactory">Validator factory.</param>
-        /// <param name="rules">External FluentValidation rules. Rule with the same name replaces default rule.</param>
-        /// <param name="loggerFactory"><see cref="ILoggerFactory"/> for logging. Can be null.</param>
-        [Obsolete("Validator factories have been deprecated. Use serviceProviders instead. See https://github.com/FluentValidation/FluentValidation/issues/1961")]
-        public FluentValidationSchemaProcessor(IValidatorFactory validatorFactory,
-                                               IEnumerable<FluentValidationRule>? rules = null,
-                                               ILoggerFactory? loggerFactory = null)
+    }
+
+    /// <summary>
+    /// Creates new instance of <see cref="FluentValidationSchemaProcessor"/>.
+    /// </summary>
+    /// <param name="rules">External FluentValidation rules. Rule with the same name replaces default rule.</param>
+    /// <param name="loggerFactory"><see cref="ILoggerFactory"/> for logging. Can be null.</param>
+    public FluentValidationSchemaProcessor(IEnumerable<FluentValidationRule>? rules = null, ILoggerFactory? loggerFactory = null)
+    {
+        _logger = loggerFactory?.CreateLogger(typeof(FluentValidationSchemaProcessor)) ?? NullLogger.Instance;
+        _rules = CreateDefaultRules();
+
+        if (rules != null)
         {
-            _validatorFactory = validatorFactory;
-            _logger = loggerFactory?.CreateLogger(typeof(FluentValidationSchemaProcessor)) ?? NullLogger.Instance;
-            _rules = CreateDefaultRules();
+            var ruleMap = _rules.ToDictionary(rule => rule.Name, rule => rule);
 
-            if (rules != null)
+            foreach (var rule in rules)
             {
-                var ruleMap = _rules.ToDictionary(rule => rule.Name, rule => rule);
-
-                foreach (var rule in rules)
-                {
-                    // Add or replace rule
-                    ruleMap[rule.Name] = rule;
-                }
-
-                _rules = ruleMap.Values.ToList();
+                // Add or replace rule
+                ruleMap[rule.Name] = rule;
             }
+
+            _rules = [.. ruleMap.Values];
+        }
+    }
+
+    /// <inheritdoc />
+    public void Process(SchemaProcessorContext context)
+    {
+        if (!context.Schema.IsObject || context.Schema.Properties.Count == 0)
+        {
+            // Ignore objects with no properties
+            return;
         }
 
-        /// <inheritdoc />
-        public void Process(SchemaProcessorContext context)
+        IValidator? validator = null;
+
+        try
         {
-            if (!context.Schema.IsObject || context.Schema.Properties.Count == 0)
+            if (_serviceProvider != null)
             {
-                // Ignore other 
-                // Ignore objects with no properties
-                return;
+                Type genericType = typeof(IValidator<>).MakeGenericType(context.ContextualType);
+                validator = _serviceProvider.GetService(genericType) as IValidator;
             }
-
-            IValidator? validator = null;
-
-            try
+            else
             {
-                if (_serviceProvider != null) {
-                    Type genericType = typeof(IValidator<>).MakeGenericType(context.ContextualType);
-                    validator = _serviceProvider.GetService(genericType) as IValidator;
-                } else if (_validatorFactory != null) {
-                    validator = _validatorFactory.GetValidator(context.ContextualType);
-                } else {
-                    throw new NoValidatorFactoryConfiguredException("No validator factory or service provider configured");
-                }
-            }
-            catch (Exception e)
-            {
-                _logger.LogWarning(0, e, $"GetValidator for type '{context.ContextualType}' fails");
-            }
-
-            // Check if a validator exists for this property
-            if (validator == null)
-            {
-                return;
-            }
-
-            _logger.LogDebug($"Applying FluentValidation rules to swagger schema for type '{context.ContextualType}'");
-
-            ApplyRulesToSchema(context, validator);
-
-            try
-            {
-                AddRulesFromIncludedValidators(context, validator);
-            }
-            catch (Exception e)
-            {
-                _logger.LogWarning(0, e, $"Applying IncludeRules for type '{context.ContextualType}' fails");
+                throw new NoValidatorFactoryConfiguredException("No validator factory or service provider configured");
             }
         }
-
-        private void ApplyRulesToSchema(SchemaProcessorContext context, IValidator validator)
+        catch (Exception e)
         {
-            _logger.LogDebug($"Applying FluentValidation rules to swagger schema for type '{context.ContextualType}'");
+            _logger.LogWarning(0, e, "GetValidator for type '{ContextualType}' fails", context.ContextualType);
+        }
 
-            var schema = context.Schema;
+        // Check if a validator exists for this property
+        if (validator == null)
+        {
+            return;
+        }
 
-            // Loop through properties
-            foreach (var key in schema.Properties.Keys)
+        _logger.LogDebug("Applying FluentValidation rules to swagger schema for type '{ContextualType}'", context.ContextualType);
+
+        ApplyRulesToSchema(context, validator);
+
+        try
+        {
+            AddRulesFromIncludedValidators(context, validator);
+        }
+        catch (Exception e)
+        {
+            _logger.LogWarning(0, e, "Applying IncludeRules for type '{ContextualType}' fails", context.ContextualType);
+        }
+    }
+
+    private void ApplyRulesToSchema(SchemaProcessorContext context, IValidator validator)
+    {
+        _logger.LogDebug("Applying FluentValidation rules to swagger schema for type '{ContextualType}'", context.ContextualType);
+
+        var schema = context.Schema;
+
+        // Loop through properties
+        foreach (string key in schema.Properties.Keys)
+        {
+            var validators = validator.GetValidatorsForMemberIgnoreCase(key);
+
+            foreach (var propertyValidator in validators)
             {
-                var validators = validator.GetValidatorsForMemberIgnoreCase(key);
-
-                foreach (var propertyValidator in validators)
+                foreach (var rule in _rules)
                 {
-                    foreach (var rule in _rules)
+                    if (!rule.Matches(propertyValidator))
                     {
-                        if (!rule.Matches(propertyValidator))
-                        {
-                            continue;
-                        }
-                        
-                        try
-                        {
-                            rule.Apply(new RuleContext(context, key, propertyValidator));
+                        continue;
+                    }
 
-                            _logger.LogDebug(
-                                $"Rule '{rule.Name}' applied for property '{context.ContextualType.Name}.{key}'"
-                            );
-                        }
-                        catch (Exception e)
-                        {
-                            _logger.LogWarning(
-                                0, e, $"Error on apply rule '{rule.Name}' for property '{context.ContextualType.Name}.{key}'"
-                            );
-                        }
+                    try
+                    {
+                        rule.Apply(new RuleContext(context, key, propertyValidator));
+
+                        _logger.LogDebug("Rule '{Name}' applied for property '{ContextTypeName}.{Key}'", rule.Name, context.ContextualType.Name, key);
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.LogWarning(0, e, "Error on apply rule '{Name}' for property '{ContextTypeName}.{Key}'", rule.Name, context.ContextualType.Name, key);
                     }
                 }
             }
         }
+    }
 
-        private void AddRulesFromIncludedValidators(SchemaProcessorContext context, IValidator validator)
+    private void AddRulesFromIncludedValidators(SchemaProcessorContext context, IValidator validator)
+    {
+        // Note: IValidatorDescriptor doesn't return IncludeRules so we need to get validators manually.
+        var includeRules = (validator as IEnumerable<IValidationRule>)
+                           .NotNull()
+                           .Where(
+                               includeRule =>
+                                   !includeRule.HasCondition && !includeRule.HasAsyncCondition
+                                                             && includeRule is IIncludeRule)
+                           .ToList();
+
+        var childAdapters = includeRules
+
+                            // 2nd filter
+                            .SelectMany(
+                                includeRule => { return includeRule.Components.Select(c => c.Validator); })
+                            .Where(
+                                x => x.GetType().IsGenericType
+                                     && x.GetType().GetGenericTypeDefinition() == typeof(ChildValidatorAdaptor<,>))
+                            .ToList();
+
+        foreach (var adapter in childAdapters)
         {
-            // Note: IValidatorDescriptor doesn't return IncludeRules so we need to get validators manually.
-            var includeRules = (validator as IEnumerable<IValidationRule>)
-                               .NotNull()
-                               .Where(
-                                   includeRule =>
-                                       !includeRule.HasCondition && !includeRule.HasAsyncCondition
-                                                                 && includeRule is IIncludeRule
-                               )
-                               .ToList();
-
-            var childAdapters = includeRules
-                                // 2nd filter 
-                                .SelectMany(
-                                    includeRule => { return includeRule.Components.Select(c => c.Validator); }
-                                )
-                                .Where(
-                                    x => x.GetType().IsGenericType
-                                         && x.GetType().GetGenericTypeDefinition() == typeof(ChildValidatorAdaptor<,>)
-                                )
-                                .ToList();
-
-            foreach (var adapter in childAdapters)
+            if (adapter.GetType().GetGenericTypeDefinition() == typeof(ChildValidatorAdaptor<,>))
             {
-                if (adapter.GetType().GetGenericTypeDefinition() == typeof(ChildValidatorAdaptor<,>))
+                var adapterType = adapter.GetType();
+
+                var adapterMethod = adapterType
+                    .GetMethod("GetValidator");
+
+                if (adapterMethod != null)
                 {
-                    var adapterType = adapter.GetType();
+                    // Get the target type T for ValidationContext<T>
+                    Type targetType = adapterMethod.GetParameters()[0].ParameterType.GetGenericArguments()[0];
 
-                    var adapterMethod = adapterType
-                        .GetMethod("GetValidator");
+                    // Create an instance of T (assuming a parameterless constructor is available)
+                    object targetInstance = Activator.CreateInstance(targetType);
 
-                    if (adapterMethod != null)
+                    // Create ValidationContext<T> using the instance of T
+                    Type validationContextType = typeof(ValidationContext<>).MakeGenericType(targetType);
+                    object validationContext = Activator.CreateInstance(validationContextType, targetInstance);
+
+                    if (adapterMethod
+                        .Invoke(adapter, [validationContext, null!]) is not IValidator includeValidator)
                     {
-                        // Get the target type T for ValidationContext<T>
-                        Type targetType = adapterMethod.GetParameters()[0].ParameterType.GetGenericArguments()[0];
-
-                        // Create an instance of T (assuming a parameterless constructor is available)
-                        object targetInstance = Activator.CreateInstance(targetType);
-
-                        // Create ValidationContext<T> using the instance of T
-                        Type validationContextType = typeof(ValidationContext<>).MakeGenericType(targetType);
-                        var validationContext = Activator.CreateInstance(validationContextType, new object[] { targetInstance });
-
-
-                        //// Create validation context of generic type
-                        //var validationContext = Activator.CreateInstance(
-                        //    adapterMethod.GetParameters()[0].ParameterType, true, null!
-                        //);
-
-                        IValidator? includeValidator = adapterMethod
-                            .Invoke(adapter, new[] { validationContext, null! }) as IValidator;
-
-                        if (includeValidator == null)
-                        {
-                            break;
-                        }
-
-                        ApplyRulesToSchema(context, includeValidator);
-                        AddRulesFromIncludedValidators(context, includeValidator);
+                        break;
                     }
+
+                    ApplyRulesToSchema(context, includeValidator);
+                    AddRulesFromIncludedValidators(context, includeValidator);
                 }
             }
         }
+    }
 
-        /// <summary>
-        /// Creates default rules.
-        /// Can be overridden by name.
-        /// </summary>
-        private static FluentValidationRule[] CreateDefaultRules()
-        {
-            return new[]
+    /// <summary>
+    /// Creates default rules.
+    /// Can be overridden by name.
+    /// </summary>
+    private static FluentValidationRule[] CreateDefaultRules()
+    {
+        return
+        [
+            new FluentValidationRule("Required")
             {
-                new FluentValidationRule("Required")
+                Matches = propertyValidator =>
+                    propertyValidator is INotNullValidator or INotEmptyValidator,
+                Apply = context =>
                 {
-                    Matches = propertyValidator =>
-                        propertyValidator is INotNullValidator or INotEmptyValidator,
-                    Apply = context =>
-                    {
-                        var schema = context.SchemaProcessorContext.Schema;
+                    var schema = context.SchemaProcessorContext.Schema;
 
-                        if (!schema.RequiredProperties.Contains(context.PropertyKey))
-                            schema.RequiredProperties.Add(context.PropertyKey);
+                    if (!schema.RequiredProperties.Contains(context.PropertyKey))
+                        schema.RequiredProperties.Add(context.PropertyKey);
+                }
+            },
+            new FluentValidationRule("NotNull")
+            {
+                Matches = propertyValidator => propertyValidator is INotNullValidator,
+                Apply = context =>
+                {
+                    var schema = context.SchemaProcessorContext.Schema;
+
+                    schema.Properties[context.PropertyKey].IsNullableRaw = false;
+
+                    if (schema.Properties[context.PropertyKey].Type.HasFlag(JsonObjectType.Null))
+                    {
+                        schema.Properties[context.PropertyKey].Type &= ~JsonObjectType.Null; // Remove nullable
                     }
-                },
-                new FluentValidationRule("NotNull")
-                {
-                    Matches = propertyValidator => propertyValidator is INotNullValidator,
-                    Apply = context =>
+
+                    var oneOfsWithReference = schema.Properties[context.PropertyKey].OneOf
+                                                    .Where(x => x.Reference != null).ToList();
+
+                    if (oneOfsWithReference.Count == 1)
                     {
-                        var schema = context.SchemaProcessorContext.Schema;
-
-                        schema.Properties[context.PropertyKey].IsNullableRaw = false;
-
-                        if (schema.Properties[context.PropertyKey].Type.HasFlag(JsonObjectType.Null))
-                        {
-                            schema.Properties[context.PropertyKey].Type &= ~JsonObjectType.Null; // Remove nullable
-                        }
-
-                        var oneOfsWithReference = schema.Properties[context.PropertyKey].OneOf
-                                                        .Where(x => x.Reference != null).ToList();
-
-                        if (oneOfsWithReference.Count == 1)
-                        {
-                            // Set the Reference directly instead and clear the OneOf collection
-                            schema.Properties[context.PropertyKey].Reference = oneOfsWithReference.Single();
-                            schema.Properties[context.PropertyKey].OneOf.Clear();
-                        }
+                        // Set the Reference directly instead and clear the OneOf collection
+                        schema.Properties[context.PropertyKey].Reference = oneOfsWithReference.Single();
+                        schema.Properties[context.PropertyKey].OneOf.Clear();
                     }
-                },
-                new FluentValidationRule("NotEmpty")
+                }
+            },
+            new FluentValidationRule("NotEmpty")
+            {
+                Matches = propertyValidator => propertyValidator is INotEmptyValidator,
+                Apply = context =>
                 {
-                    Matches = propertyValidator => propertyValidator is INotEmptyValidator,
-                    Apply = context =>
+                    var schema = context.SchemaProcessorContext.Schema;
+
+                    schema.Properties[context.PropertyKey].IsNullableRaw = false;
+
+                    if (schema.Properties[context.PropertyKey].Type.HasFlag(JsonObjectType.Null))
                     {
-                        var schema = context.SchemaProcessorContext.Schema;
-
-                        schema.Properties[context.PropertyKey].IsNullableRaw = false;
-
-                        if (schema.Properties[context.PropertyKey].Type.HasFlag(JsonObjectType.Null))
-                        {
-                            schema.Properties[context.PropertyKey].Type &= ~JsonObjectType.Null; // Remove nullable
-                        }
-
-                        var oneOfsWithReference = schema.Properties[context.PropertyKey].OneOf
-                                                        .Where(x => x.Reference != null).ToList();
-
-                        if (oneOfsWithReference.Count == 1)
-                        {
-                            // Set the Reference directly instead and clear the OneOf collection
-                            schema.Properties[context.PropertyKey].Reference = oneOfsWithReference.Single();
-                            schema.Properties[context.PropertyKey].OneOf.Clear();
-                        }
-
-                        schema.Properties[context.PropertyKey].MinLength = 1;
+                        schema.Properties[context.PropertyKey].Type &= ~JsonObjectType.Null; // Remove nullable
                     }
-                },
-                new FluentValidationRule("Length")
-                {
-                    Matches = propertyValidator => propertyValidator is ILengthValidator,
-                    Apply = context =>
+
+                    var oneOfsWithReference = schema.Properties[context.PropertyKey].OneOf
+                                                    .Where(x => x.Reference != null).ToList();
+
+                    if (oneOfsWithReference.Count == 1)
                     {
-                        var schema = context.SchemaProcessorContext.Schema;
-
-                        var lengthValidator = (ILengthValidator) context.PropertyValidator;
-
-                        if (lengthValidator.Max > 0)
-                            schema.Properties[context.PropertyKey].MaxLength = lengthValidator.Max;
-
-                        if (lengthValidator.GetType() == typeof(MinimumLengthValidator<>)
-                            || lengthValidator.GetType() == typeof(ExactLengthValidator<>)
-                            || schema.Properties[context.PropertyKey].MinLength == null)
-                            schema.Properties[context.PropertyKey].MinLength = lengthValidator.Min;
+                        // Set the Reference directly instead and clear the OneOf collection
+                        schema.Properties[context.PropertyKey].Reference = oneOfsWithReference.Single();
+                        schema.Properties[context.PropertyKey].OneOf.Clear();
                     }
-                },
-                new FluentValidationRule("Pattern")
-                {
-                    Matches = propertyValidator => propertyValidator is IRegularExpressionValidator,
-                    Apply = context =>
-                    {
-                        var regularExpressionValidator = (IRegularExpressionValidator) context.PropertyValidator;
 
-                        var schema = context.SchemaProcessorContext.Schema;
-                        schema.Properties[context.PropertyKey].Pattern = regularExpressionValidator.Expression;
-                    }
-                },
-                new FluentValidationRule("Comparison")
+                    schema.Properties[context.PropertyKey].MinLength = 1;
+                }
+            },
+            new FluentValidationRule("Length")
+            {
+                Matches = propertyValidator => propertyValidator is ILengthValidator,
+                Apply = context =>
                 {
-                    Matches = propertyValidator => propertyValidator is IComparisonValidator,
-                    Apply = context =>
-                    {
-                        var comparisonValidator = (IComparisonValidator) context.PropertyValidator;
+                    var schema = context.SchemaProcessorContext.Schema;
 
-                        if (comparisonValidator.ValueToCompare.IsNumeric())
-                        {
-                            var valueToCompare = Convert.ToDecimal(comparisonValidator.ValueToCompare);
-                            var schema = context.SchemaProcessorContext.Schema;
-                            var schemaProperty = schema.Properties[context.PropertyKey];
+                    var lengthValidator = (ILengthValidator)context.PropertyValidator;
 
-                            if (comparisonValidator.Comparison == Comparison.GreaterThanOrEqual)
-                            {
-                                schemaProperty.Minimum = valueToCompare;
-                            }
-                            else if (comparisonValidator.Comparison == Comparison.GreaterThan)
-                            {
-                                schemaProperty.Minimum = valueToCompare;
-                                schemaProperty.IsExclusiveMinimum = true;
-                            }
-                            else if (comparisonValidator.Comparison == Comparison.LessThanOrEqual)
-                            {
-                                schemaProperty.Maximum = valueToCompare;
-                            }
-                            else if (comparisonValidator.Comparison == Comparison.LessThan)
-                            {
-                                schemaProperty.Maximum = valueToCompare;
-                                schemaProperty.IsExclusiveMaximum = true;
-                            }
-                        }
-                    }
-                },
-                new FluentValidationRule("Between")
+                    if (lengthValidator.Max > 0)
+                        schema.Properties[context.PropertyKey].MaxLength = lengthValidator.Max;
+
+                    if (lengthValidator.GetType() == typeof(MinimumLengthValidator<>)
+                        || lengthValidator.GetType() == typeof(ExactLengthValidator<>)
+                        || schema.Properties[context.PropertyKey].MinLength == null) { schema.Properties[context.PropertyKey].MinLength = lengthValidator.Min; }
+                }
+            },
+            new FluentValidationRule("Pattern")
+            {
+                Matches = propertyValidator => propertyValidator is IRegularExpressionValidator,
+                Apply = context =>
                 {
-                    Matches = propertyValidator => propertyValidator is IBetweenValidator,
-                    Apply = context =>
+                    var regularExpressionValidator = (IRegularExpressionValidator)context.PropertyValidator;
+
+                    var schema = context.SchemaProcessorContext.Schema;
+                    schema.Properties[context.PropertyKey].Pattern = regularExpressionValidator.Expression;
+                }
+            },
+            new FluentValidationRule("Comparison")
+            {
+                Matches = propertyValidator => propertyValidator is IComparisonValidator,
+                Apply = context =>
+                {
+                    var comparisonValidator = (IComparisonValidator)context.PropertyValidator;
+
+                    if (comparisonValidator.ValueToCompare.IsNumeric())
                     {
-                        var betweenValidator = (IBetweenValidator) context.PropertyValidator;
+                        decimal valueToCompare = Convert.ToDecimal(comparisonValidator.ValueToCompare);
                         var schema = context.SchemaProcessorContext.Schema;
                         var schemaProperty = schema.Properties[context.PropertyKey];
 
-                        if (betweenValidator.From.IsNumeric())
+                        if (comparisonValidator.Comparison == Comparison.GreaterThanOrEqual)
                         {
-                            if (betweenValidator.GetType().IsSubClassOfGeneric(typeof(ExclusiveBetweenValidator<,>)))
-                            {
-                                schemaProperty.ExclusiveMinimum = Convert.ToDecimal(betweenValidator.From);
-                            }
-                            else
-                            {
-                                schemaProperty.Minimum = Convert.ToDecimal(betweenValidator.From);
-                            }
+                            schemaProperty.Minimum = valueToCompare;
                         }
-
-                        if (betweenValidator.To.IsNumeric())
+                        else if (comparisonValidator.Comparison == Comparison.GreaterThan)
                         {
-                            if (betweenValidator.GetType().IsSubClassOfGeneric(typeof(ExclusiveBetweenValidator<,>)))
-                            {
-                                schemaProperty.ExclusiveMaximum = Convert.ToDecimal(betweenValidator.To);
-                            }
-                            else
-                            {
-                                schemaProperty.Maximum = Convert.ToDecimal(betweenValidator.To);
-                            }
+                            schemaProperty.Minimum = valueToCompare;
+                            schemaProperty.IsExclusiveMinimum = true;
+                        }
+                        else if (comparisonValidator.Comparison == Comparison.LessThanOrEqual)
+                        {
+                            schemaProperty.Maximum = valueToCompare;
+                        }
+                        else if (comparisonValidator.Comparison == Comparison.LessThan)
+                        {
+                            schemaProperty.Maximum = valueToCompare;
+                            schemaProperty.IsExclusiveMaximum = true;
                         }
                     }
-                },
-                new FluentValidationRule("AspNetCoreCompatibleEmail")
+                }
+            },
+            new FluentValidationRule("Between")
+            {
+                Matches = propertyValidator => propertyValidator is IBetweenValidator,
+                Apply = context =>
                 {
-                    Matches = propertyValidator => propertyValidator.GetType()
-                                                                    .IsSubClassOfGeneric(
-                                                                        typeof(AspNetCoreCompatibleEmailValidator<>)
-                                                                    ),
-                    Apply = context =>
+                    var betweenValidator = (IBetweenValidator)context.PropertyValidator;
+                    var schema = context.SchemaProcessorContext.Schema;
+                    var schemaProperty = schema.Properties[context.PropertyKey];
+
+                    if (betweenValidator.From.IsNumeric())
                     {
-                        var schema = context.SchemaProcessorContext.Schema;
-                        schema.Properties[context.PropertyKey].Pattern = "^[^@]+@[^@]+$"; // [^@] All chars except @
+                        if (betweenValidator.GetType().IsSubClassOfGeneric(typeof(ExclusiveBetweenValidator<,>)))
+                        {
+                            schemaProperty.ExclusiveMinimum = Convert.ToDecimal(betweenValidator.From);
+                        }
+                        else
+                        {
+                            schemaProperty.Minimum = Convert.ToDecimal(betweenValidator.From);
+                        }
                     }
-                },
-            };
-        }
+
+                    if (betweenValidator.To.IsNumeric())
+                    {
+                        if (betweenValidator.GetType().IsSubClassOfGeneric(typeof(ExclusiveBetweenValidator<,>)))
+                        {
+                            schemaProperty.ExclusiveMaximum = Convert.ToDecimal(betweenValidator.To);
+                        }
+                        else
+                        {
+                            schemaProperty.Maximum = Convert.ToDecimal(betweenValidator.To);
+                        }
+                    }
+                }
+            },
+            new FluentValidationRule("AspNetCoreCompatibleEmail")
+            {
+                Matches = propertyValidator => propertyValidator.GetType()
+                                                                .IsSubClassOfGeneric(
+                                                                    typeof(AspNetCoreCompatibleEmailValidator<>)),
+                Apply = context =>
+                {
+                    var schema = context.SchemaProcessorContext.Schema;
+                    schema.Properties[context.PropertyKey].Pattern = "^[^@]+@[^@]+$"; // [^@] All chars except @
+                }
+            },
+        ];
     }
 }

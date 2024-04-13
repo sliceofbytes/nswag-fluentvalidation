@@ -1,13 +1,12 @@
 using FluentValidation;
 
-namespace ZymLabs.NSwag.FluentValidation.Tests
+namespace ZymLabs.NSwag.FluentValidation.Tests;
+
+public class MockValidationTargetIncludeValidator : AbstractValidator<MockValidationTarget>
 {
-    public class MockValidationTargetIncludeValidator : AbstractValidator<MockValidationTarget>
+    public MockValidationTargetIncludeValidator()
     {
-        public MockValidationTargetIncludeValidator()
-        {
-            RuleFor(sample => sample.IncludeField).NotNull();
-            RuleFor(sample => sample.IncludeField).NotEqual("Testing1234");
-        }
+        RuleFor(sample => sample.IncludeField).NotNull();
+        RuleFor(sample => sample.IncludeField).NotEqual("Testing1234");
     }
 }

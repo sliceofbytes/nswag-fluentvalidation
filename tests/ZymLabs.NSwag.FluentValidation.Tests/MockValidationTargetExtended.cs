@@ -1,7 +1,6 @@
-namespace ZymLabs.NSwag.FluentValidation.Tests
+namespace ZymLabs.NSwag.FluentValidation.Tests;
+
+public class MockValidationTargetExtended : MockValidationTarget
 {
-    public class MockValidationTargetExtended : MockValidationTarget
-    {
-        public string ChildProperty = "";
-    }
+    public string ChildProperty = string.Empty;
 }

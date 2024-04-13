@@ -1,8 +1,6 @@
-﻿using System;
-using System.Runtime.Serialization;
+﻿using System.Runtime.Serialization;
 
 namespace ZymLabs.NSwag.FluentValidation;
-
 
 /// <summary>
 /// The exception that is thrown when no validator factory or service provider is configured.
