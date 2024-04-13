@@ -188,9 +188,9 @@ jobs:
 
       - name: Publish to Github Packages 
         if: ${{ !env.ACT }}
-        run: dotnet nuget push bin/ --source "github" --api-key ${{ secrets.GITHUB_PAT }}
+        run: dotnet nuget push bin/ --source "github" --api-key ${{ secrets.NUGET_GITHUB_PACKAGE_TOKEN }}
         env:
-          GITHUB_PAT: ${{ secrets.GITHUB_PAT }}
+          GITHUB_PAT: ${{ secrets.NUGET_GITHUB_PACKAGE_TOKEN }}
 
       - name: Store NuGet package artifacts
         if: ${{ !env.ACT }}
