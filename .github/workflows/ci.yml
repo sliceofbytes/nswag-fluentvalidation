@@ -185,9 +185,7 @@ jobs:
       - name: Pack NuGet Packages
         run: dotnet pack -c Release /p:Version=$GITVERSION_NUGETVERSION -o bin/ --no-restore --no-build
 
-      - name: Authenticate with GitHub Packages
-        run: dotnet nuget add source --name "github" --username ${{ github.actor }} --password ${{ secrets.GITHUB_PAT }} --store-password-in-clear-text https://nuget.pkg.github.com/sliceofbytes/index.json
-          
+
       - name: Publish to Github Packages 
         if: ${{ !env.ACT }}
         run: dotnet nuget push bin/ --source "github" --api-key ${{ secrets.GITHUB_PAT }}
