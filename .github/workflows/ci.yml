@@ -184,14 +184,15 @@ jobs:
       
       - name: Pack NuGet Packages
         run: dotnet pack -c Release /p:Version=$GITVERSION_NUGETVERSION -o bin/ --no-restore --no-build
-              
-      - name: Publish NuGet Private Packages 
-        if: ${{ !env.ACT }}
-        run: dotnet nuget push bin/ --api-key ${{ secrets.GITHUB_TOKEN }} --source https://nuget.pkg.github.com/${{ github.repository_owner }}
 
-      - name: Publish NuGet Public Packages
+      - name: Authenticate with GitHub Packages
+        run: dotnet nuget add source --name "github" --username ${{ github.actor }} --password ${{ secrets.GITHUB_PAT }} --store-password-in-clear-text https://nuget.pkg.github.com/sliceofbytes/index.json
+          
+      - name: Publish to Github Packages 
         if: ${{ !env.ACT }}
-        run: dotnet nuget push bin/ --api-key ${{ secrets.NUGET_PUBLIC_API_KEY }} --source ${{ secrets.NUGET_PUBLIC_FEED }}
+        run: dotnet nuget push bin/ --source "github" --api-key ${{ secrets.GITHUB_PAT }}
+        env:
+          GITHUB_PAT: ${{ secrets.GITHUB_PAT }}
 
       - name: Store NuGet package artifacts
         if: ${{ !env.ACT }}
