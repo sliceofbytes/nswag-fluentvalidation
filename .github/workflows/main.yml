@@ -77,12 +77,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: actions/setup-dotnet@v2
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v2
         with:
           dotnet-version: 8.0.x
 
       - name: Build Documentation
-        uses: nikeee/docfx-action@v1
+        uses: nunit/docfx-action@v2.4.0
         with:
           args: docfx.json
 
