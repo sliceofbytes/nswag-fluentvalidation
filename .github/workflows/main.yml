@@ -101,6 +101,10 @@ jobs:
           ignoreFailedSources: false
           preferLatestVersion: false
 
+      - name: Run GitVersion
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v0.10
+
       - name: Pack NuGet Packages
         run: dotnet pack -c Release /p:Version=${{ steps.gitversion.outputs.NuGetVersionV2 }} -o bin/
 
