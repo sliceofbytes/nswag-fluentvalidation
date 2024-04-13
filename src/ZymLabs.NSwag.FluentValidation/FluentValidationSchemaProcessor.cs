@@ -98,7 +98,7 @@ namespace ZymLabs.NSwag.FluentValidation
                 } else if (_validatorFactory != null) {
                     validator = _validatorFactory.GetValidator(context.ContextualType);
                 } else {
-                    throw new Exception("No validator factory or service provider configured");
+                    throw new NoValidatorFactoryConfiguredException("No validator factory or service provider configured");
                 }
             }
             catch (Exception e)
@@ -201,11 +201,10 @@ namespace ZymLabs.NSwag.FluentValidation
                     {
                         // Create validation context of generic type
                         var validationContext = Activator.CreateInstance(
-                            adapterMethod.GetParameters().First().ParameterType, new object[] { null! }
+                            adapterMethod.GetParameters()[0].ParameterType, null!
                         );
-                        //var validationContext = new ValidationContext<object>(null);
 
-                        var includeValidator = adapterMethod
+                        IValidator? includeValidator = adapterMethod
                             .Invoke(adapter, new[] { validationContext, null! }) as IValidator;
 
                         if (includeValidator == null)
@@ -222,7 +221,7 @@ namespace ZymLabs.NSwag.FluentValidation
 
         /// <summary>
         /// Creates default rules.
-        /// Can be overriden by name.
+        /// Can be overridden by name.
         /// </summary>
         private static FluentValidationRule[] CreateDefaultRules()
         {
