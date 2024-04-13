@@ -30,6 +30,9 @@ jobs:
         uses: gittools/actions/gitversion/setup@v0.10
         with:
           versionSpec: '5.x'
+          
+      - name: Ensure full Git history
+        run: git fetch --unshallow || echo "Repository was already unshallow."
 
       - name: Run GitVersion
         id: gitversion
@@ -64,6 +67,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Indicates to fetch all history for all tags and branches
+      
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v2
@@ -89,12 +95,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Indicates to fetch all history for all tags and branches
 
       - name: Setup .NET
-      - uses: actions/setup-dotnet@v2
+        uses: actions/setup-dotnet@v2
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: '8.0.x'
 
           
       - name: Install GitVersion
