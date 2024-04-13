@@ -4,7 +4,7 @@ Use FluentValidation rules to define validation requirements for NSwag Swagger/O
 
 Removed ZymLabs.NSwag.FluentValidation.AspNetCore as it was no longer needed and the core package can be used in any project.
 
-Updated to .Net 8.0 and FluentValidation 11.9.0 and tested against NJSONSchema 11.0.0
+Updated to .Net 8.0 and FluentValidation 11.9.0 and tested against NJSONSchema 11.0.0 fixes quite a few issues.
 
 - ZymLabs.NSwag.FluentValidation
   - Provides the core logic, can be included in an application project.

@@ -12,6 +12,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ZymLabs.NSwag.FluentValidat
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ZymLabs.NSwag.FluentValidation.AspNetCore.Tests", "tests\ZymLabs.NSwag.FluentValidation.AspNetCore.Tests\ZymLabs.NSwag.FluentValidation.AspNetCore.Tests.csproj", "{6C7C59F5-4BBA-413A-A7A4-15583F3833E4}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9C318888-F449-4AB5-85D8-5DFD5A1C8D0F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
