@@ -58,15 +58,18 @@ jobs:
           dotnet tool install -g trx2junit
           echo "$PATH"
           export PATH="$PATH:/root/.dotnet/tools"
-          find . -name '*.trx' -exec trx2junit --input {} --output {}_junit.xml \;
+          mkdir -p junit-results
+          for file in $(find . -name '*.trx'); do
+            trx2junit --input "${file}" --output "junit-results/$(basename ${file} .trx)_junit.xml"
+          done
         working-directory: ${{ github.workspace }}
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v3
         with:
-          name: Test Results
-          path: junit_test_results.xml
+          name: JUnit Test Results
+          path: junit-results/
 
   documentation:
     needs: build-and-test
