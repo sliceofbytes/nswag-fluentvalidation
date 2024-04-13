@@ -52,24 +52,12 @@ jobs:
       - name: Test
         run: dotnet test --no-restore --verbosity normal --logger "trx;LogFileName=test_results.xml"
 
-      - name: Convert test results to JUnit format
-        if: always()
-        run: |
-          dotnet tool install -g trx2junit
-          echo "$PATH"
-          export PATH="$PATH:/root/.dotnet/tools"
-          mkdir -p junit-results
-          for file in $(find . -name '*.trx'); do
-            trx2junit --input "${file}" --output "junit-results/$(basename ${file} .trx)_junit.xml"
-          done
-        working-directory: ${{ github.workspace }}
-
-      - name: Upload test results
+      - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v3
         with:
-          name: JUnit Test Results
-          path: junit-results/
+          name: Test Results
+          path: tests/**/TestResults/*.xml
 
   documentation:
     needs: build-and-test
