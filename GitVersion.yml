@@ -1,4 +1,13 @@
+next-version: 0.6.3
+assembly-versioning-scheme: MajorMinorPatch
+assembly-file-versioning-scheme: MajorMinorPatch
+assembly-informational-format: '{InformationalVersion}'
 mode: ContinuousDelivery
+major-version-bump-message: '\+semver:\s?(breaking|major)'
+minor-version-bump-message: '\+semver:\s?(feature|minor)'
+patch-version-bump-message: '\+semver:\s?(fix|patch)'
+no-bump-message: '\+semver:\s?(none|skip)'
+commit-message-incrementing: Enabled
 
 branches:
   main:
@@ -11,11 +20,7 @@ branches:
     tracks-release-branches: false
     is-release-branch: false
     commit-message-incrementing: Enabled
-    commit-message-increments:
-      major: "+semver: major|#major"
-      minor: "+semver: minor|#minor"
-      patch: "+semver: patch|#patch"
-      none: "+semver: none|#none"
+
 
   develop:
     regex: develop
