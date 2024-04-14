@@ -31,9 +31,6 @@ patch-version-bump-message: '\+semver:\s?(fix|patch)|#fix|#patch'
 # Regex to identify commits that should not trigger any version bump.
 no-bump-message: '\+semver:\s?(none|skip)|#none|#skip'
 
-commit-message-increments:
-  
-
 branches:
   main:
     regex: ^master$|^main$
