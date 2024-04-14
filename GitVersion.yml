@@ -1,5 +1,5 @@
 # Specifies the next version number if no suitable tags are found in the repository.
-# next-version: 0.6.3
+next-version: 0.7.4
 
 # Determines how the assembly version fields are incremented.
 assembly-versioning-scheme: MajorMinorPatch
