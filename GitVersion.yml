@@ -10,6 +10,13 @@ branches:
     track-merge-target: false
     tracks-release-branches: false
     is-release-branch: false
+    commit-message-incrementing: Enabled
+    commit-message-increments:
+      major: "\\+semver: major|\\#major"
+      minor: "\\+semver: minor|\\#minor"
+      patch: "\\+semver: patch|\\#patch"
+      none: "\\+semver: none|\\#none"
+      override: "\\+semver: \\d+\\.\\d+\\.\\d+|\\#setversion: \\s*\\d+\\.\\d+\\.\\d+"
 
   develop:
     regex: develop

@@ -42,14 +42,10 @@ public void ConfigureServices(IServiceCollection services)
     services
         .AddControllers()
 
-        // Adds fluent validators to Asp.net
-        .AddFluentValidation(c =>
-        {
-            c.RegisterValidatorsFromAssemblyContaining<Startup>();
-
-            // Optionally set validator factory if you have problems with scope resolve inside validators.
-            c.ValidatorFactoryType = typeof(HttpContextServiceProviderValidatorFactory);
-        })
+        // Adds fluent validators to Asp.net with client side adapters. 
+		.AddValidatorsFromAssemblyContaining<AnyValidator>()
+		.AddFluentValidationAutoValidation()
+		.AddFluentValidationClientsideAdapters()
 
     services.AddOpenApiDocument((settings, serviceProvider) =>
     {
