@@ -1,36 +1,125 @@
+# Specifies the next version number if no suitable tags are found in the repository.
 next-version: 0.6.3
+
+# Determines how the assembly version fields are incremented.
 assembly-versioning-scheme: MajorMinorPatch
+
+# Determines how the assembly file version fields are incremented.
 assembly-file-versioning-scheme: MajorMinorPatch
+
+
+ # Format for the informational version.
 assembly-informational-format: '{InformationalVersion}'
+
+# Default mode for versioning, focuses on preparing releases at any commit.
 mode: ContinuousDelivery
-major-version-bump-message: '\+semver:\s?(breaking|major)'
-minor-version-bump-message: '\+semver:\s?(feature|minor)'
-patch-version-bump-message: '\+semver:\s?(fix|patch)'
-no-bump-message: '\+semver:\s?(none|skip)'
-commit-message-incrementing: Enabled
+
+
+# Enables version increments based on commit messages.
+commit-message-incrementing: Enabled  
+
+# Commit Message Regex
+# Regex to identify commits that bump the major version.
+major-version-bump-message: '\+semver:\s?(breaking|major)|#major|#breaking'
+
+# Regex to identify commits that bump the minor version.
+minor-version-bump-message: '\+semver:\s?(feature|minor)|#feature|#minor'
+
+# Regex to identify commits that bump the patch version.
+patch-version-bump-message: '\+semver:\s?(fix|patch)|#fix|#patch'
+
+# Regex to identify commits that should not trigger any version bump.
+no-bump-message: '\+semver:\s?(none|skip)|#none|#skip'
+
+commit-message-increments:
+  
 
 branches:
   main:
-    regex: master|main
+    regex: ^master$|^main$
     mode: ContinuousDelivery
     tag: ''
-    increment: Minor
-    prevent-increment-of-merged-branch-version: false
-    track-merge-target: false
-    tracks-release-branches: false
-    is-release-branch: false
-    commit-message-incrementing: Enabled
-
-
-  develop:
-    regex: develop
-    mode: ContinuousDeployment
-    tag: unstable
     increment: Patch
     prevent-increment-of-merged-branch-version: true
     track-merge-target: false
+    source-branches: [ 'develop', 'release' ]
     tracks-release-branches: false
     is-release-branch: false
+    is-mainline: true
+    pre-release-weight: 55000
+  develop:
+    regex: ^dev(elop)?(ment)?$
+    mode: ContinuousDeployment
+    tag: alpha
+    increment: Minor
+    prevent-increment-of-merged-branch-version: false
+    track-merge-target: true
+    source-branches: []
+    tracks-release-branches: true
+    is-release-branch: false
+    is-mainline: false
+    pre-release-weight: 0
+  release:
+    regex: ^releases?[/-]
+    mode: ContinuousDelivery
+    tag: beta
+    increment: None
+    prevent-increment-of-merged-branch-version: true
+    track-merge-target: false
+    source-branches: [ 'develop', 'main', 'support', 'release' ]
+    tracks-release-branches: false
+    is-release-branch: true
+    is-mainline: false
+    pre-release-weight: 30000
+  feature:
+    regex: ^features?[/-]
+    mode: ContinuousDelivery
+    tag: useBranchName
+    increment: Inherit
+    prevent-increment-of-merged-branch-version: false
+    track-merge-target: false
+    source-branches: [ 'develop', 'main', 'release', 'feature', 'support', 'hotfix' ]
+    tracks-release-branches: false
+    is-release-branch: false
+    is-mainline: false
+    pre-release-weight: 30000
+  pull-request:
+    regex: ^(pull|pull\-requests|pr)[/-]
+    mode: ContinuousDelivery
+    tag: PullRequest
+    increment: Inherit
+    prevent-increment-of-merged-branch-version: false
+    tag-number-pattern: '[/-](?<number>\d+)[-/]'
+    track-merge-target: false
+    source-branches: [ 'develop', 'main', 'release', 'feature', 'support', 'hotfix' ]
+    tracks-release-branches: false
+    is-release-branch: false
+    is-mainline: false
+    pre-release-weight: 30000
+  hotfix:
+    regex: ^hotfix(es)?[/-]
+    mode: ContinuousDelivery
+    tag: beta
+    increment: Patch
+    prevent-increment-of-merged-branch-version: false
+    track-merge-target: false
+    source-branches: [ 'develop', 'main', 'support' ]
+    tracks-release-branches: false
+    is-release-branch: false
+    is-mainline: false
+    pre-release-weight: 30000
+  support:
+    regex: ^support[/-]
+    mode: ContinuousDelivery
+    tag: ''
+    increment: Patch
+    prevent-increment-of-merged-branch-version: true
+    track-merge-target: false
+    source-branches: [ 'main' ]
+    tracks-release-branches: false
+    is-release-branch: false
+    is-mainline: true
+    pre-release-weight: 55000
 
 ignore:
   sha: []

@@ -20,15 +20,41 @@ Updated to .Net 8.0 and FluentValidation 11.9.0 and tested against NJSONSchema 1
 
 ### 1. Reference packages in your web project:
 
+### Adding GitHub Packages as a NuGet Source
+
+Authenticate with GitHub Packages
+
+GitHub requires authentication to access packages from GitHub Packages. You'll need a GitHub token with at least read:packages scope. You can create a token in your GitHub account under `Settings` > `Developer settings` > `Personal access tokens`.
+
+Add the NuGet Source
+
+Use the following command to add GitHub Packages as a NuGet source. Replace YOUR_GITHUB_USERNAME with your GitHub username and YOUR_GITHUB_TOKEN with the token you generated:
+This command adds the GitHub Packages feed specific to the nswag-fluentvalidation repository to your NuGet configuration.
+
 ```console
-dotnet add package ZymLabs.NSwag.FluentValidation.AspNetCore
+nuget sources Add -Name "sliceofbytes" -Source "https://nuget.pkg.github.com/sliceofbytes/index.json" -Username YOUR_GITHUB_USERNAME -Password YOUR_GITHUB_TOKEN
 ```
 
-Or if you want to use the core package for your application without the AspNetCore MVC dependencies.
+Installing ZymLabs.NSwag.FluentValidation
+
+Once the package source is added, you can install the ZymLabs.NSwag.FluentValidation package using either the .NET CLI or NuGet Package Manager Console, or Nuget Gallery.
+
+Using .NET CLI
+
+Open your terminal and run the following command from the directory of your .NET project:
 
 ```console
-dotnet add package ZymLabs.NSwag.FluentValidation
+dotnet add package ZymLabs.NSwag.FluentValidation --source "https://nuget.pkg.github.com/sliceofbytes/index.json"
 ```
+
+Using NuGet Package Manager Console
+
+If you are using Visual Studio, you can open the Package Manager Console and run:
+
+```console
+Install-Package ZymLabs.NSwag.FluentValidation -Version VERSION_NUMBER -Souce "https://nuget.pkg.github.com/sliceofbytes/index.json"
+```
+
 
 ### 2. Change Startup.cs
 
@@ -36,9 +62,8 @@ dotnet add package ZymLabs.NSwag.FluentValidation
 // This method gets called by the runtime. Use this method to add services to the container.
 public void ConfigureServices(IServiceCollection services)
 {
-    // HttpContextServiceProviderValidatorFactory requires access to HttpContext
-    services.AddHttpContextAccessor();
 
+    services.AddHttpContextAccessor();
     services
         .AddControllers()
 
@@ -72,6 +97,7 @@ ZymLabs.NSwag.FluentValidation | Swashbuckle.AspNetCore | FluentValidation
 ---------|----------|---------
 [0.1.0, 0.4.0) | [13.0.0, 14.0.0) | >=7.2.0
 [0.4.0, 0.5.0) | [13.0.0, 14.0.0) | >=10.0.0
+
 
 ## Supported validators
 
@@ -179,6 +205,14 @@ internal class CustomerAddressValidator : AbstractValidator<Customer>
 ```
 
 ## Upgrading
+
+- To 0.6.3 
+
+      Forked and updated so it would work in my .Net 8 project.  Updated to FluentValidation 11.9.0 and NJSONSchema 11.0.0.  Removed the AspNetCore package as it was no longer needed and the core package can be used in any project. 
+
+      Removed IValidationFactory as it was deprecated now just use IServiceProvider. Registration has changed slightly, just look at example above.
+
+
 
 - To 0.6.0
 
