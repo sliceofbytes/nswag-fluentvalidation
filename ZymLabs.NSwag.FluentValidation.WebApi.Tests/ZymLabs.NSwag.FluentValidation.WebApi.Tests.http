@@ -1,0 +1,6 @@
+@ZymLabs.NSwag.FluentValidation.WebApi.Tests_HostAddress = http://localhost:5206
+
+GET {{ZymLabs.NSwag.FluentValidation.WebApi.Tests_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
